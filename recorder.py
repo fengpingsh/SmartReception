@@ -14,13 +14,20 @@ import coils
 import cv2
 import numpy as np
 import redis
-import face_recognition
-import dlib
 import threading
 from PIL import Image
 from PIL import ImageOps
 from mvnc import mvncapi as mvnc
-
+USE_FACE_RECOGNITION = 0
+if USE_FACE_RECOGNITION:
+    import face_recognition
+    import dlib
+else:
+    cascPath = 'haarcascade_frontalface_default.xml'
+    faceCascade = cv2.CascadeClassifier(cascPath)
+    eyePath = 'haarcascade_eye.xml'
+    eye_cascade = cv2.CascadeClassifier(eyePath)
+    process_frame= True
 # Retrieve command line arguments.
 width = None if len(sys.argv) <= 1 else int(sys.argv[1])
 height = None if len(sys.argv) <= 2 else int(sys.argv[2])
@@ -60,19 +67,40 @@ while True:
         continue
     image = cv2.flip(image, 0)
     small_frame = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
-    face_locations = face_recognition.face_locations(small_frame)
-    for i, (top, right, bottom, left) in enumerate(face_locations):
-        # Draw a box around the face
-        top *= 2
-        right *= 2
-        bottom *= 2
-        left *= 2
-        face_image = image[top:bottom, left:right]
+    if USE_FACE_RECOGNITION:
+        face_locations = face_recognition.face_locations(small_frame)
+        for i, (top, right, bottom, left) in enumerate(face_locations):
+            # Draw a box around the face
+            top *= 2
+            right *= 2
+            bottom *= 2
+            left *= 2
+            face_image = image[top:bottom, left:right]
 
-        # Provide the tracker the initial position of the object
-        font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(image, 'face', (left + 6, top - 6), font, 0.5, (0, 0, 255), 1)
-        cv2.rectangle(image, (left, top), (right, bottom), (0, 0, 255), 2)
+            # Provide the tracker the initial position of the object
+            font = cv2.FONT_HERSHEY_DUPLEX
+            cv2.putText(image, 'face', (left + 6, top - 6), font, 0.5, (0, 0, 255), 1)
+            cv2.rectangle(image, (left, top), (right, bottom), (0, 0, 255), 2)
+    else:
+        gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
+        face_locations = faceCascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(30, 30),
+            flags=cv2.CASCADE_SCALE_IMAGE
+        )
+        # Draw a rectangle around the faces
+        for (x, y, w, h) in face_locations:
+            roi_gray = gray[y:y + h, x:x + w]
+            roi_color = small_frame[y:y + h, x:x + w]
+            eyes = eye_cascade.detectMultiScale(roi_gray)
+            if len(eyes) == 0:
+                break
+            font = cv2.FONT_HERSHEY_DUPLEX
+            cv2.putText(image, 'face', (x*2 + 6, y*2 - 6), font, 0.5, (0, 255, 0), 1)
+            cv2.rectangle(image, (x * 2, y * 2), ((x + w) * 2, (y + h) * 2), (0, 255, 0), 2)
+
     hello, image = cv2.imencode('.jpg', image)
     #sio = StringIO.StringIO()
     #np.save(sio, image)
