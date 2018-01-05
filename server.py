@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Serve webcam images from a Redis store using Tornado.
 Usage:

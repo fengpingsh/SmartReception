@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Continuously capture images from a webcam and write to a Redis store.
 Usage:
@@ -5,7 +6,6 @@ Usage:
 """
 
 import os
-#import StringIO
 import io
 import sys
 import time
@@ -14,7 +14,12 @@ import coils
 import cv2
 import numpy as np
 import redis
-
+import face_recognition
+import dlib
+import threading
+from PIL import Image
+from PIL import ImageOps
+from mvnc import mvncapi as mvnc
 
 # Retrieve command line arguments.
 width = None if len(sys.argv) <= 1 else int(sys.argv[1])
@@ -54,6 +59,20 @@ while True:
         time.sleep(0.5)
         continue
     image = cv2.flip(image, 0)
+    small_frame = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
+    face_locations = face_recognition.face_locations(small_frame)
+    for i, (top, right, bottom, left) in enumerate(face_locations):
+        # Draw a box around the face
+        top *= 2
+        right *= 2
+        bottom *= 2
+        left *= 2
+        face_image = image[top:bottom, left:right]
+
+        # Provide the tracker the initial position of the object
+        font = cv2.FONT_HERSHEY_DUPLEX
+        cv2.putText(image, 'face', (left + 6, top - 6), font, 0.5, (0, 0, 255), 1)
+        cv2.rectangle(image, (left, top), (right, bottom), (0, 0, 255), 2)
     hello, image = cv2.imencode('.jpg', image)
     #sio = StringIO.StringIO()
     #np.save(sio, image)
