@@ -8,3 +8,4 @@ Installation：
   c. cd ..;python3 setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
 2. install dependency
   a. pip3 install face_recognition coils numpy redis tornado
+  b. sudo apt-get update; sudo apt-get install redis-server
