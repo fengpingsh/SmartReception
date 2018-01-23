@@ -1,0 +1,8 @@
+{
+    "url":"rtsp://admin:Baustem123@192.168.1.153:554/Streaming/Channels/101?transportmode=unicast&profile=Profile_1",
+    "graph":"/home/fengping/Downloads/caffe/vggface/vgg12/graph",
+    "mean":"/home/fengping/Downloads/caffe/vggface/vgg12/mean.npy",
+    "label":"/home/fengping/Downloads/caffe/vggface/vgg12/labels.txt",
+    "fps":3,
+    "resize":4
+}
