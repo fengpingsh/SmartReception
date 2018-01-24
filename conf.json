@@ -4,5 +4,6 @@
     "mean":"/home/fengping/Downloads/caffe/vggface/vgg12/mean.npy",
     "label":"/home/fengping/Downloads/caffe/vggface/vgg12/labels.txt",
     "fps":3,
-    "resize":4
+    "resize":4,
+    "debug":1
 }
