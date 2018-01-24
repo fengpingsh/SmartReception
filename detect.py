@@ -103,7 +103,7 @@ ilsvrc_mean = numpy.load(mean_file).mean(1).mean(1)
 # ***************************************************************
 exitFlag = 0
 class myThread(threading.Thread):
-    def __init__(self, threadID, name, q):
+    def __init__(self, threadID, name):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -115,27 +115,23 @@ class myThread(threading.Thread):
         while not exitFlag:
             image_id = self._store.get('image_id').decode('utf-8')
             if image_id != self._prev_image_id:
-                print("process image_id = {}".format(image_id))
                 image = self._store.get('image')
                 array_dtype, l, w, d = image_id.split('|')[1].split('#')
                 image = numpy.fromstring(image, dtype=array_dtype).reshape(int(l), int(w), int(d))
-                #image_file = time.strftime("%Y%m%d%H%M%S", time.localtime()) + '.jpg'
-                #cv2.imwrite(image_file, image)
                 self._prev_image_id = image_id
-                process_data(self.name, image)
+                process_data(image_id, image)
         print("Exiting " + self.name)
 
-def process_data(image_id, q):
+def process_data(image_id, image):
     ticks = time.time()
-    frame = q
-    small_frame = cv2.resize(q, (0, 0), fx=1/zoom_out, fy=1/zoom_out)
+    small_frame = cv2.resize(image, (0, 0), fx=1/zoom_out, fy=1/zoom_out)
     faces = dlib_detection(small_frame)
     for i, (left, top, right, bottom) in enumerate(faces):
         left *= zoom_out
         top *= zoom_out
         right *= zoom_out
         bottom *= zoom_out
-        face_image = frame[top:bottom, left:right]
+        face_image = image[top:bottom, left:right]
         face_image = cv2.resize(face_image, (224, 224))
         face_image = face_image.astype(numpy.float32)
         face_image[:, :, 0] = (face_image[:, :, 0] - ilsvrc_mean[0])
@@ -149,22 +145,21 @@ def process_data(image_id, q):
             print('prediction ' + str(i) + ' (probability ' + str(output[order[i]]) + ') is ' + labels[
                 order[i]] + '  label index is: ' + str(order[i]))
         if output[order[0]] < 1.0:
-            cv2.putText(frame, 'unknown', (left + 6, top - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 255, 0),
+            cv2.putText(image, 'unknown', (left + 6, top - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 255, 0),
                         1)
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
         else:
-            cv2.putText(frame, labels[order[0]], (left + 6, top - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 255, 0), 1)
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            cv2.putText(image, labels[order[0]], (left + 6, top - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 255, 0), 1)
+            cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
     if debug and len(faces) > 0:
-        cv2.imwrite(image_id + '_labeled.jpg', frame)
+        cv2.imwrite(image_id + '_labeled.jpg', image)
     print("processing %s takes %f" % (image_id, time.time() - ticks))
 
-thread = myThread(1, 'face detection and recognition', None)
+thread = myThread(1, 'face detection and recognition')
 thread.start()
 # ***************************************************************
-# Processing the images
-# ***************************************************************
 # Create client to the Redis store.
+# ***************************************************************
 store = redis.Redis()
 index = 0
 while True:
@@ -172,26 +167,22 @@ while True:
     ret, frame = video_capture.read()
     if not ret:
         time.sleep(1)
-        print('read failed...')
+        print('failed to read frame, restarting...')
         video_capture.release()
         video_capture = cv2.VideoCapture(conf['url'])
         index = 0
         continue
     if index % fps == 0:
-        small_frame = frame#cv2.resize(frame, (0, 0), fx=1/zoom_out, fy=1/zoom_out)
-        l, w, d = small_frame.shape
-        array_dtype = str(small_frame.dtype)
-        small_frame = small_frame.ravel().tostring()
-        store.set('image', small_frame)
-        image_id = '{0}|{1}#{2}#{3}#{4}'.format(index, array_dtype, l, w, d).encode('utf-8')
-        store.set('image_id', image_id)
-        index = index + 1
-        #print("store an image {}".format(store.get('image_id')))
-
+        l, w, d = frame.shape
+        array_dtype = str(frame.dtype)
+        frame = frame.ravel().tostring()
+        frame_id = '{0}|{1}#{2}#{3}#{4}'.format(index, array_dtype, l, w, d).encode('utf-8')
+        store.mset({'image':frame, 'image_id':frame_id})
+        print("write {} image".format(frame_id))
+    index = index + 1
 # When everything is done, release the capture
 exitFlag = 1
 graph.DeallocateGraph()
 device.CloseDevice()
 video_capture.release()
-#cv2.destroyAllWindows()
 

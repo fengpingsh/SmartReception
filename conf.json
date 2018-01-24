@@ -5,5 +5,5 @@
     "label":"/home/fengping/Downloads/caffe/vggface/vgg12/labels.txt",
     "fps":3,
     "resize":4,
-    "debug":1
+    "debug":0
 }
