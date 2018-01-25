@@ -112,20 +112,33 @@ class myThread(threading.Thread):
 
     def run(self):
         print("Starting " + self.name)
+        t_start = time.time()
+        fps = 0
         while not exitFlag:
             image_id = self._store.get('image_id').decode('utf-8')
             if image_id != self._prev_image_id:
+                fps += 1
+                t0 = time.time()
                 image = self._store.get('image')
                 array_dtype, l, w, d = image_id.split('|')[1].split('#')
                 image = numpy.fromstring(image, dtype=array_dtype).reshape(int(l), int(w), int(d))
                 self._prev_image_id = image_id
-                process_data(image_id, image)
+                num, names = process_data(image_id, image)
+                if num > 0:
+                    t1 = time.time()
+                    sfps = fps / (t1 - t_start)
+                    print("FPS: {}, detected {} faces({}) in {} takes {}".format(sfps, num, names, image_id, t1 - t0))
+                    names = '{0}|{1}'.format(int(time.time()),names).encode('utf-8')
+                    self._store.set('face', names)
         print("Exiting " + self.name)
 
 def process_data(image_id, image):
     ticks = time.time()
+    if image.size == 0:
+        return 0, None
     small_frame = cv2.resize(image, (0, 0), fx=1/zoom_out, fy=1/zoom_out)
     faces = dlib_detection(small_frame)
+    names = ""
     for i, (left, top, right, bottom) in enumerate(faces):
         left *= zoom_out
         top *= zoom_out
@@ -148,13 +161,16 @@ def process_data(image_id, image):
             cv2.putText(image, 'unknown', (left + 6, top - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 255, 0),
                         1)
             cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
+            names += 'unknown#'
         else:
             cv2.putText(image, labels[order[0]], (left + 6, top - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 255, 0), 1)
             cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
+            names += labels[order[0]] + '#'
     if debug and len(faces) > 0:
         cv2.imwrite(image_id + '_labeled.jpg', image)
-    print("processing %s takes %f" % (image_id, time.time() - ticks))
-
+    if names != "" and names[-1] == '#':
+        names = names[:-1]
+    return len(faces), names
 thread = myThread(1, 'face detection and recognition')
 thread.start()
 # ***************************************************************
@@ -178,7 +194,8 @@ while True:
         frame = frame.ravel().tostring()
         frame_id = '{0}|{1}#{2}#{3}#{4}'.format(index, array_dtype, l, w, d).encode('utf-8')
         store.mset({'image':frame, 'image_id':frame_id})
-        print("write {} image".format(frame_id))
+        if debug:
+            print("write {} image".format(frame_id))
     index = index + 1
 # When everything is done, release the capture
 exitFlag = 1
