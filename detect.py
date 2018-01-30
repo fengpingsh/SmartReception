@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import cv2
 import sys
 import os
@@ -124,18 +125,20 @@ class myThread(threading.Thread):
                 image = numpy.fromstring(image, dtype=array_dtype).reshape(int(l), int(w), int(d))
                 self._prev_image_id = image_id
                 num, names = process_data(image_id, image)
+                print(num, names)
                 if num > 0:
                     t1 = time.time()
                     sfps = fps / (t1 - t_start)
                     print("FPS: {}, detected {} faces({}) in {} takes {}".format(sfps, num, names, image_id, t1 - t0))
                     names = '{0}|{1}'.format(int(time.time()),names).encode('utf-8')
                     self._store.set('face', names)
+                else:
+                    names = '{0}|{1}'.format(int(time.time()), "unknown").encode('utf-8')
+                    self._store.set('face', names)
         print("Exiting " + self.name)
 
 def process_data(image_id, image):
     ticks = time.time()
-    if image.size == 0:
-        return 0, None
     small_frame = cv2.resize(image, (0, 0), fx=1/zoom_out, fy=1/zoom_out)
     faces = dlib_detection(small_frame)
     names = ""
@@ -145,6 +148,10 @@ def process_data(image_id, image):
         right *= zoom_out
         bottom *= zoom_out
         face_image = image[top:bottom, left:right]
+        print("left = {}, top = {}, right = {}, bottom = {}".format(left, top, right, bottom))
+        if face_image.size == 0:
+            print("None Image")
+            return 0, "unknown"
         face_image = cv2.resize(face_image, (224, 224))
         face_image = face_image.astype(numpy.float32)
         face_image[:, :, 0] = (face_image[:, :, 0] - ilsvrc_mean[0])
