@@ -1,16 +1,27 @@
 # RealTimeFaceRecognition
-Recogtition the face in real time with pre-trained VGG face model and Movidius ncs.
+In this code, we simply finished the following sense:
+1. using the opencv or dlib to detect human-faces
+2. Recogtition the face in real time with fine-tuned VGG face model on Movidius ncs
+3. record the recognition result to redis database;
+4. there is a faceApp subscribed the event above and do the validation of an known person
+5. if the face is known, unlock the door-locker which is enveloped as an OCF device
+
+Note: this sense has been performed on RaspberryPI + Intel Movidius ncs + Wulian smart home devices.
 
 Installation：
+==============
 1. install the dlib
-  a. git clone https://github.com/davisking/dlib.git
-  b. cd dlib;mkdir build; cd build; cmake .. -DDLIB_USE_CUDA=0 -DUSE_AVX_INSTRUCTIONS=1; cmake --build .
-  c. cd ..;python3 setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
-2. install dependency
-  a. pip3 install numpy redis
-  b. sudo apt-get update; sudo apt-get install redis-server
-3. install ncs sdk
+2. install opencv3, python-opencv and associated
+3. install dependency: like numpy, redis, redis-server
+4. install ncs sdk
+5. install for CoAP Server:
+	a. pip3 install LinkHeader
+	b. install aiocoap
+6. install the iotivity sdk
+7. compile the faceApp and faceSensor
 
-For CoAP Server:
-1. pip3 install LinkHeader
-4. install aiocoap
+Run:
+==============
+1. python3 detect.py -c conf.json
+2. python3 server.py
+3. run the face app and face sensor
