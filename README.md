@@ -1,6 +1,7 @@
 SmartReception
 =====================================================
-This is an implement of smart reception. Here gives a brief intruduction of the sense:
+This is an implement of smart reception. Now, it's just an single sense which only support to unlock the door if known employees come.
+
 # Precondition
 1. an IPC installed in front of the office entrance;  
 2. a smart locker should be installed;  
@@ -47,9 +48,14 @@ debug: int value. set to none zero if you want to enable debug;
 If you like this code or idea, please consider donating to the
 address below.
 
-fengping <fengping@baustem.com>
+fengping <fengping@baustem.com>  
 1HDHUQGjU42ytfJDud1vGuJb4HksUcATjh
 
 # TODO
-Replace the detection and recognition with the face-comparation or realtime-face-recognition.
+replace the detection and recognition with the face-comparation or realtime-face-recognition.  
+connect to the attendance system, which should also detect the off work;  
+support the legacy unlock device;
+
+
+
 
