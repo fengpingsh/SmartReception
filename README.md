@@ -1,6 +1,6 @@
 SmartReception
 =====================================================
-This is an implement of smart reception. Now, it's just an single sense which only support to unlock the door if known employees come.
+This is a part of implement of the smart office. Now, the smart reception is just an single sense which only support to unlock the door if known employees come.
 
 # Precondition
 1. an IPC installed in front of the office entrance;  
@@ -19,7 +19,6 @@ to unlock the door, and if not, nothing will be done.
 Note: this sense has been performed on RaspberryPI + Intel Movidius ncs + Wulian smart home devices. The smart locker OCF device is not included in this code.
 
 # Installation：
-==============
 1. install the dlib  
 2. install opencv3, python-opencv and associated  
 3. install dependency: like numpy, redis, redis-server  
